@@ -6,10 +6,12 @@ React + Vite + Tailwind CSS + shadcn/ui がセットアップ済みなので、`
 
 ## クイックスタート
 
+新しいプロトタイプを始めるときは、その都度 clone して使います（clone した時点で最新になります）。
+
 ```bash
-# 1. テンプレートをコピー（または git clone）してプロジェクト名にリネーム
-cp -r template my-prototype
-cd my-prototype
+# 1. リポジトリを clone
+git clone cm1@cm1.git.backlog.jp:/MBT_TASK/designer-prototype-starter.git
+cd designer-prototype-starter
 
 # 2. 依存をインストール
 npm install
@@ -17,13 +19,6 @@ npm install
 # 3. 開発サーバ起動（ブラウザが自動で開きます）
 npm run dev
 ```
-
-## プロジェクト名を変える
-
-新しいプロトタイプを始めるときは以下を書き換えます。
-
-- `package.json` の `"name"`（例: `"my-prototype"`）
-- `index.html` の `<title>`（例: `<title>My Prototype</title>`）
 
 ## 画面を編集する
 
