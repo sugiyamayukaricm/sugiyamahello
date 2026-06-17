@@ -11,9 +11,10 @@
 **UI は可能な限り shadcn/ui を使用し、組み合わせて表現する。shadcn にないものはこれに限らず、別のライブラリや自作で対応してよい。**
 
 - ボタン・カード・バッジ・ダイアログ・セレクト・テーブルなど、shadcn にある UI はすべて shadcn で組む
-- 必要になった時点で **追加許可を求めずに** `npx shadcn@latest add <component>` を実行する
+- 作業前に **まず `src/components/ui/` を確認する**。既にファイルがあれば **そのまま使う**（再度 `npx shadcn@latest add` しない）
+- `src/components/ui/` に無い場合のみ `npx shadcn@latest add <component>` を実行する（追加許可不要）
 - 例: `dialog`, `dropdown-menu`, `select`, `input`, `label`, `textarea`, `checkbox`, `tooltip`, `popover`, `command`, `calendar`, `table`, `form`, `sheet`, `tabs`, `accordion`, `alert-dialog` ...
-- 既存の `src/components/ui/` に同名がある場合は、`base-vega` スタイルに統一するため上書きしてよい
+- 「スタイルを base-vega に揃え直して」「shadcn のバージョンに戻して」と明示的に指示された場合のみ上書きする
 - shadcn に該当コンポーネントが無い場合は、別の手段（自作、別ライブラリ）に進んでよい
 
 コンポーネント一覧: <https://ui.shadcn.com/docs/components>
@@ -37,6 +38,8 @@
 | 機能横断のカスタムフック | `src/hooks/`（必要になったら作る） |
 
 1 つのコンポーネントが大きくなったら、`src/components/foo.tsx` を `src/components/foo/index.tsx` + 関連ファイルに分割する。
+
+**判断軸**: 規約で迷ったら [bulletproof-react](https://github.com/alan2207/bulletproof-react) の考え方（責務の分離・コロケーション・浅いネスト）を参照する。ただしプロトタイプなので `features/` ディレクトリは導入しない。1 画面 = 1 ファイルで足りるならそのまま `src/pages/` に置く。
 
 ## インポート規約
 
@@ -64,9 +67,9 @@ import { Button } from '../../components/ui/button';
 
 | 対応 | ライブラリの例 |
 | --- | --- |
-| 即追加 OK（許可不要） | shadcn UI 系、`lucide-react` のアイコン、`react-router` のルート定義 |
-| 事前にデザイナーへ確認 | フォームライブラリ（`react-hook-form` + `zod`）、状態管理（`zustand`, `jotai` 等）、認証、API クライアント、グラフ描画 |
-| 追加しない | Storybook、MSW、TanStack Query、AWS Amplify、Cesium、Leaflet（プロトタイプには重い） |
+| 即追加 OK（許可不要） | shadcn UI 系、`lucide-react` のアイコン、`react-router` のルート定義、`clsx`、`tailwind-merge` |
+| 推奨ライブラリ（必要になったら最初に検討） | `react-hook-form` + `zod`（フォーム）、`msw`（API モック）、`date-fns`（日付処理） |
+| それ以外を導入する場合 | **フロントエンドエンジニアに確認が必要**。Claude はユーザーに「フロントエンドエンジニアに確認してください」と必ず案内する。状態管理（`zustand`, `jotai`）、認証、API クライアント、グラフ描画、地図など。特に Storybook・TanStack Query・AWS Amplify・Cesium・Leaflet はプロトタイプには重いため避ける。 |
 
 ## Lint / Format
 
@@ -80,7 +83,7 @@ import { Button } from '../../components/ui/button';
 ## 変更前の作法
 
 - 既存の `src/pages/` `src/components/` を読んで、同じパターンがあれば真似る
-- 新規コンポーネントを書く前に shadcn にあるか調べる（迷ったら追加して使う）
+- 新規コンポーネントを書く前に shadcn にあるか調べる。`src/components/ui/` に既にあるなら **そのまま使う**（再度 `shadcn add` しない）
 
 ## ルーティング
 
