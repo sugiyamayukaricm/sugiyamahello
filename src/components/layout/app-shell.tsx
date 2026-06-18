@@ -1,7 +1,7 @@
-import { Link, Outlet, useLocation } from "react-router";
-import { cn } from "@/lib/utils";
+import { Link, Outlet, useLocation } from 'react-router';
+import { cn } from '@/lib/utils';
 
-const navItems = [{ to: "/", label: "ホーム" }];
+const navItems = [{ to: '/', label: 'ホーム' }];
 
 export function AppShell() {
   const location = useLocation();
@@ -21,10 +21,10 @@ export function AppShell() {
                   key={item.to}
                   to={item.to}
                   className={cn(
-                    "rounded-md px-3 py-1.5 text-sm transition-colors",
+                    'rounded-md px-3 py-1.5 text-sm transition-colors',
                     isActive
-                      ? "bg-muted text-foreground"
-                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                      ? 'bg-muted text-foreground'
+                      : 'text-muted-foreground hover:bg-muted hover:text-foreground'
                   )}
                 >
                   {item.label}
