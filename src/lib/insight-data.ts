@@ -1,4 +1,5 @@
 import appearanceImg from '@/assets/insight/appearance.png';
+import factoryImg from '@/assets/insight/factory.png';
 import otherImg from '@/assets/insight/other.png';
 import smellImg from '@/assets/insight/smell.png';
 import soundImg from '@/assets/insight/sound.png';
@@ -64,6 +65,47 @@ export function createEmptyDraft(time: string): InsightDraft {
     author: '',
   };
 }
+
+// 一覧・タイムラインの初期表示用デモデータ
+export const initialInsights: InsightRecord[] = [
+  {
+    id: 'insight-seed-1',
+    category: '音',
+    time: '15:51',
+    equipment: '包餡機',
+    problem:
+      'コンベアのあたりからキーキーした音がする。製品も少し振られてる気がする。',
+    photos: [
+      { id: 'ip-1', url: factoryImg },
+      { id: 'ip-2', url: factoryImg },
+    ],
+    author: '露手川',
+    createdAt: '2024/8/9 1:21',
+    updatedAt: '2024/8/9 1:21',
+  },
+  {
+    id: 'insight-seed-2',
+    category: '見た目',
+    time: '10:20',
+    equipment: 'シール機',
+    problem: 'シール部分に若干のズレが見える場合がある。',
+    photos: [{ id: 'ip-3', url: factoryImg }],
+    author: '露手川',
+    createdAt: '2024/8/9 10:25',
+    updatedAt: '2024/8/9 10:25',
+  },
+  {
+    id: 'insight-seed-3',
+    category: '振動',
+    time: '8:05',
+    equipment: 'コンベア',
+    problem: '始業点検時、コンベアの一部に細かい振動を感じた。',
+    photos: [],
+    author: '田中',
+    createdAt: '2024/8/9 8:10',
+    updatedAt: '2024/8/9 8:10',
+  },
+];
 
 // 記録完了モーダルで見せるデモ用のレコメンド（静的）
 export const knowledgeSuggestion = {
