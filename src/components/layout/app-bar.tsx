@@ -1,18 +1,18 @@
-import { ChevronDown, type LucideIcon, Menu } from 'lucide-react';
+import { ChevronDown, House, Menu } from 'lucide-react';
 import { useState } from 'react';
+import { useNavigate } from 'react-router';
 import { GlobalNav } from '@/components/layout/global-nav';
 
 type AppBarProps = {
   title: string;
   /** タイトル右の設備セレクト表示（例: B-5）。 */
   unit?: string;
-  /** ハンバーガー左に並べる装飾アイコン（タイムライン用）。 */
-  extraIcons?: LucideIcon[];
 };
 
-/** 各画面共通の上部ツールバー。ハンバーガーからグローバルナビを開く。 */
-export function AppBar({ title, unit = 'B-5', extraIcons = [] }: AppBarProps) {
+/** MVP 版の上部ツールバー。ホームアイコンとハンバーガー（グローバルナビ）を持つ。 */
+export function AppBar({ title, unit = 'B-5' }: AppBarProps) {
   const [navOpen, setNavOpen] = useState(false);
+  const navigate = useNavigate();
 
   return (
     <>
@@ -28,14 +28,14 @@ export function AppBar({ title, unit = 'B-5', extraIcons = [] }: AppBarProps) {
           </button>
         </div>
         <div className="flex items-center gap-1.5">
-          {extraIcons.map((Icon) => (
-            <span
-              key={Icon.displayName ?? Icon.name}
-              className="flex size-9 items-center justify-center text-[#1f2937]"
-            >
-              <Icon className="size-5" />
-            </span>
-          ))}
+          <button
+            type="button"
+            onClick={() => navigate('/insight')}
+            className="flex size-9 items-center justify-center rounded-lg text-[#1f2937]"
+            aria-label="ホーム"
+          >
+            <House className="size-5" />
+          </button>
           <button
             type="button"
             onClick={() => setNavOpen(true)}

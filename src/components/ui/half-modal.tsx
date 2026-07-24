@@ -18,8 +18,13 @@ const HalfModalTitle = DialogPrimitive.Title;
 function HalfModalContent({
   className,
   children,
+  variant = 'sheet',
   ...props
-}: DialogPrimitive.Popup.Props) {
+}: DialogPrimitive.Popup.Props & {
+  /** sheet: 下部ハーフモーダル / full: 画面上部まで覆う全面モーダル */
+  variant?: 'sheet' | 'full';
+}) {
+  const isFull = variant === 'full';
   return (
     <DialogPrimitive.Portal>
       <DialogPrimitive.Backdrop
@@ -29,7 +34,10 @@ function HalfModalContent({
       <DialogPrimitive.Popup
         data-slot="half-modal-content"
         className={cn(
-          'data-open:slide-in-from-bottom data-closed:slide-out-to-bottom fixed inset-x-0 bottom-0 z-50 mx-auto flex max-h-[92dvh] w-full max-w-[430px] flex-col overflow-hidden rounded-t-2xl bg-white text-[#030712] shadow-[0px_-8px_28px_rgba(0,0,0,0.18)] outline-none duration-300 data-closed:animate-out data-open:animate-in',
+          'data-open:slide-in-from-bottom data-closed:slide-out-to-bottom fixed inset-x-0 z-50 mx-auto flex w-full max-w-[430px] flex-col overflow-hidden bg-white text-[#030712] shadow-[0px_-8px_28px_rgba(0,0,0,0.18)] outline-none duration-300 data-closed:animate-out data-open:animate-in',
+          isFull
+            ? 'top-0 bottom-0 max-h-full'
+            : 'bottom-0 max-h-[92dvh] rounded-t-2xl',
           className
         )}
         {...props}

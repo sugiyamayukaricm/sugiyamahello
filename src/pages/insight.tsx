@@ -1,24 +1,24 @@
-import {
-  Bell,
-  BookMarked,
-  ChevronDown,
-  Headphones,
-  Lightbulb,
-  Search,
-} from 'lucide-react';
+import { ChevronDown } from 'lucide-react';
 import { useMemo } from 'react';
 import { useInsightFlow } from '@/components/insight/use-insight-flow';
+import { useKnowledgeFlow } from '@/components/knowledge/use-knowledge-flow';
 import { AppBar } from '@/components/layout/app-bar';
 import { useAppData } from '@/lib/app-store';
 import { formatDateLabel } from '@/lib/insight-data';
 
 const hours = Array.from({ length: 24 }, (_, hour) => hour);
 
-const extraIcons = [Search, Bell, Lightbulb, BookMarked, Headphones];
-
 export function Insight() {
   const { insights } = useAppData();
-  const flow = useInsightFlow();
+  const knowledgeFlow = useKnowledgeFlow();
+  const flow = useInsightFlow({
+    onMakeKnowledge: (record) =>
+      knowledgeFlow.openNewWithDraft({
+        equipment: record.equipment,
+        symptom: record.problem,
+        photos: record.photos,
+      }),
+  });
 
   const today = useMemo(() => new Date(), []);
   const dateLabel = formatDateLabel(today);
@@ -27,7 +27,7 @@ export function Insight() {
     <div className="mx-auto flex min-h-[calc(100dvh-8rem)] w-full max-w-[430px] flex-col bg-white">
       {/* ヘッダー群（スクロール時も上部に固定） */}
       <div className="sticky top-0 z-30">
-        <AppBar title="気付き" extraIcons={extraIcons} />
+        <AppBar title="気付き" />
 
         {/* 日付ヘッダー */}
         <div className="flex items-center gap-4 bg-[#1f2937] px-3 py-2 shadow-md">
@@ -65,7 +65,7 @@ export function Insight() {
                 </span>
               </div>
               <div className="w-px shrink-0 self-stretch bg-[#d1d5db]" />
-              <div className="flex flex-1 flex-col gap-2 p-2">
+              <div className="flex min-w-0 flex-1 flex-col gap-2 p-2">
                 {items.map((item) => (
                   <button
                     key={item.id}
@@ -76,8 +76,9 @@ export function Insight() {
                     <span className="w-5 shrink-0 text-right text-[#030712] text-base leading-6">
                       {item.time.split(':')[1]}
                     </span>
-                    <span className="flex-1 truncate text-[#030712] text-base leading-6">
-                      {item.problem || item.category || '気付き'}
+                    <span className="min-w-0 flex-1 truncate text-[#030712] text-base leading-6">
+                      気付き：{item.category ?? '—'}・
+                      {item.equipment || '設備未設定'}
                     </span>
                   </button>
                 ))}
@@ -99,6 +100,7 @@ export function Insight() {
       </div>
 
       {flow.node}
+      {knowledgeFlow.node}
     </div>
   );
 }

@@ -36,7 +36,7 @@ export function KnowledgeDetailModal({
 }: KnowledgeDetailModalProps) {
   return (
     <HalfModal open={open} onOpenChange={onOpenChange}>
-      <HalfModalContent>
+      <HalfModalContent variant="full">
         <HalfModalHeader title="ナレッジ" />
 
         {record ? (

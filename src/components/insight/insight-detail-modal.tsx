@@ -42,7 +42,7 @@ export function InsightDetailModal({
 }: InsightDetailModalProps) {
   return (
     <HalfModal open={open} onOpenChange={onOpenChange}>
-      <HalfModalContent>
+      <HalfModalContent variant="full">
         <HalfModalHeader title="気付き記録" />
 
         {record ? (

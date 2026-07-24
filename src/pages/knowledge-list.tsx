@@ -1,4 +1,3 @@
-import { BookOpen } from 'lucide-react';
 import { useState } from 'react';
 import { useKnowledgeFlow } from '@/components/knowledge/use-knowledge-flow';
 import { AppBar } from '@/components/layout/app-bar';
@@ -6,12 +5,12 @@ import { useAppData } from '@/lib/app-store';
 import { equipmentOptions } from '@/lib/knowledge-data';
 import { cn } from '@/lib/utils';
 
-// 一覧に登場する設備だけをフィルタとして出す
 export function KnowledgeList() {
   const { knowledge } = useAppData();
   const flow = useKnowledgeFlow();
   const [filter, setFilter] = useState<string>('すべて');
 
+  // 一覧に登場する設備だけをフィルタとして出す
   const availableEquipment = equipmentOptions.filter((equipment) =>
     knowledge.some((item) => item.equipment === equipment)
   );
@@ -24,7 +23,8 @@ export function KnowledgeList() {
 
   return (
     <div className="mx-auto flex min-h-[calc(100dvh-8rem)] w-full max-w-[430px] flex-col bg-white">
-      <div className="sticky top-0 z-30">
+      {/* ヘッダー＋フィルターを上部固定 */}
+      <div className="sticky top-0 z-30 bg-white">
         <AppBar title="ナレッジ" />
         <div className="flex gap-2 overflow-x-auto border-[#e5e7eb] border-b bg-white px-3 py-2">
           {filters.map((item) => {
@@ -59,29 +59,19 @@ export function KnowledgeList() {
               key={item.id}
               type="button"
               onClick={() => flow.openDetail(item.id)}
-              className="flex w-full items-center gap-3 border-[#e5e7eb] border-b px-4 py-3 text-left transition-colors hover:bg-[#f9fafb]"
+              className="flex w-full flex-col gap-1 border-[#e5e7eb] border-b px-4 py-3 text-left transition-colors hover:bg-[#f9fafb]"
             >
-              {item.photos[0] ? (
-                <img
-                  src={item.photos[0].url}
-                  alt=""
-                  className="size-14 shrink-0 rounded-lg object-cover"
-                />
-              ) : (
-                <div className="flex size-14 shrink-0 items-center justify-center rounded-lg bg-[#e5e7eb] text-[#9ca3af]">
-                  <BookOpen className="size-6" />
+              {/* 症状（＝タイトル）と原因と対応の冒頭を並べ、詳細への導線にする */}
+              <div className="truncate font-bold text-[#030712] text-base leading-6">
+                {item.title}
+              </div>
+              {item.cause ? (
+                <div className="truncate text-[#030712b0] text-sm leading-5">
+                  {item.cause.replace(/\n/g, ' ')}
                 </div>
-              )}
-              <div className="min-w-0 flex-1">
-                <div className="truncate text-[#030712] text-base leading-6">
-                  {item.title}
-                </div>
-                <div className="mt-0.5 flex items-center gap-1 text-[#030712b0] text-xs">
-                  <BookOpen className="size-3.5 shrink-0" />
-                  <span className="truncate">
-                    {item.equipment} {item.updatedAt.split(' ')[0]}
-                  </span>
-                </div>
+              ) : null}
+              <div className="text-[#9ca3af] text-xs">
+                {item.equipment} {item.updatedAt}
               </div>
             </button>
           ))

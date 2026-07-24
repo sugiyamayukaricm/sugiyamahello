@@ -5,10 +5,14 @@ import { AlertModal } from '@/components/ui/alert-modal';
 import { Toast } from '@/components/ui/toast';
 import { useAppData } from '@/lib/app-store';
 import { formatShortDate } from '@/lib/insight-data';
-import type { KnowledgeDraft } from '@/lib/knowledge-data';
+import {
+  createEmptyKnowledgeDraft,
+  type KnowledgeDraft,
+} from '@/lib/knowledge-data';
 
 type KnowledgeFlow = {
   openNew: () => void;
+  openNewWithDraft: (partial: Partial<KnowledgeDraft>) => void;
   openDetail: (id: string) => void;
   node: ReactNode;
 };
@@ -20,6 +24,9 @@ export function useKnowledgeFlow(): KnowledgeFlow {
 
   const [recordOpen, setRecordOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [prefillDraft, setPrefillDraft] = useState<KnowledgeDraft | undefined>(
+    undefined
+  );
   const [detailId, setDetailId] = useState<string | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -63,6 +70,14 @@ export function useKnowledgeFlow(): KnowledgeFlow {
 
   const openNew = () => {
     setEditingId(null);
+    setPrefillDraft(undefined);
+    setRecordOpen(true);
+  };
+
+  // 気付きからナレッジ化するときなど、一部を埋めた状態で新規フォームを開く
+  const openNewWithDraft = (partial: Partial<KnowledgeDraft>) => {
+    setEditingId(null);
+    setPrefillDraft({ ...createEmptyKnowledgeDraft(), ...partial });
     setRecordOpen(true);
   };
 
@@ -110,11 +125,12 @@ export function useKnowledgeFlow(): KnowledgeFlow {
           setRecordOpen(open);
           if (!open) {
             setEditingId(null);
+            setPrefillDraft(undefined);
           }
         }}
         mode={editingId ? 'edit' : 'new'}
         dateLabel={shortDate}
-        initialDraft={editingDraft}
+        initialDraft={editingDraft ?? prefillDraft}
         onSubmit={handleSubmit}
       />
       <KnowledgeDetailModal
@@ -136,5 +152,5 @@ export function useKnowledgeFlow(): KnowledgeFlow {
     </>
   );
 
-  return { openNew, openDetail, node };
+  return { openNew, openNewWithDraft, openDetail, node };
 }

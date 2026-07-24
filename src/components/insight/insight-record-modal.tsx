@@ -26,6 +26,7 @@ import {
   type InsightPhoto,
   insightCategories,
 } from '@/lib/insight-data';
+import { categoryIcons } from '@/lib/insight-icons';
 import { cn } from '@/lib/utils';
 
 // 気付き記録の入力欄はデザイン準拠のボーダー/角丸に揃える
@@ -110,7 +111,7 @@ export function InsightRecordModal({
 
   return (
     <HalfModal open={open} onOpenChange={onOpenChange}>
-      <HalfModalContent>
+      <HalfModalContent variant="full">
         <HalfModalHeader
           title="気付き記録"
           meta={
@@ -122,29 +123,35 @@ export function InsightRecordModal({
         />
 
         <HalfModalBody className="flex flex-col gap-4 p-4">
-          {/* カテゴリ選択 */}
+          {/* カテゴリ選択（アイコン＋ラベル。選択時はラベル領域が濃紺） */}
           <div className="grid grid-cols-2 gap-2">
             {insightCategories.map((category) => {
               const selected = draft.category === category.key;
+              const Icon = categoryIcons[category.key];
               return (
                 <button
                   key={category.key}
                   type="button"
                   onClick={() => handleSelectCategory(category.key)}
                   className={cn(
-                    'flex flex-col overflow-hidden rounded-2xl bg-white text-left shadow-[0px_1px_3px_0px_rgba(0,0,0,0.1),0px_1px_2px_-1px_rgba(0,0,0,0.1)] outline-none transition-all',
+                    'flex flex-col overflow-hidden rounded-2xl text-left shadow-[0px_1px_3px_0px_rgba(0,0,0,0.1),0px_1px_2px_-1px_rgba(0,0,0,0.1)] outline-none transition-all',
                     selected
                       ? 'ring-2 ring-[#1f2937]'
-                      : 'ring-1 ring-transparent hover:ring-[#d1d5db]'
+                      : 'ring-1 ring-[#e5e7eb] hover:ring-[#d1d5db]'
                   )}
                   aria-pressed={selected}
                 >
-                  <img
-                    src={category.image}
-                    alt=""
-                    className="h-14 w-full object-cover"
-                  />
-                  <span className="p-4 text-[#374151] text-base leading-6">
+                  <span className="flex h-14 items-center justify-center bg-[#f3f4f6] text-[#374151]">
+                    <Icon className="size-6" />
+                  </span>
+                  <span
+                    className={cn(
+                      'p-4 text-base leading-6 transition-colors',
+                      selected
+                        ? 'bg-[#1f2937] text-[#f9fafb]'
+                        : 'bg-white text-[#374151]'
+                    )}
+                  >
                     {category.key}
                   </span>
                 </button>
@@ -191,6 +198,9 @@ export function InsightRecordModal({
               onChange={(event) => update('problem', event.target.value)}
               className={cn(fieldClassName, 'min-h-[80px]')}
             />
+            <p className="px-1 text-[#030712b0] text-xs">
+              機械名、対応箇所、どういう事象かをできるだけ具体的に
+            </p>
           </div>
 
           {/* 写真 */}

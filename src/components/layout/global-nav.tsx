@@ -4,10 +4,9 @@ import { useLocation, useNavigate } from 'react-router';
 import { cn } from '@/lib/utils';
 
 const navItems = [
-  { label: 'ホーム', to: '/insight' },
   { label: '気付き一覧', to: '/insights' },
   { label: 'ナレッジ一覧', to: '/knowledge' },
-  { label: 'AIチャット', to: '/chat' },
+  { label: 'AI相談', to: '/chat' },
 ];
 
 type GlobalNavProps = {
@@ -49,9 +48,7 @@ export function GlobalNav({ open, onOpenChange }: GlobalNavProps) {
 
           <nav className="flex flex-1 flex-col gap-1 px-6 pt-2">
             {navItems.map((item) => {
-              const active =
-                location.pathname === item.to ||
-                (item.to === '/insight' && location.pathname === '/');
+              const active = location.pathname === item.to;
               return (
                 <button
                   key={item.to}

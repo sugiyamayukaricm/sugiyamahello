@@ -1,27 +1,12 @@
-import {
-  Activity,
-  Eye,
-  type LucideIcon,
-  Scale,
-  Sparkles,
-  Volume2,
-  Wind,
-} from 'lucide-react';
+import { Sparkles } from 'lucide-react';
 import { useState } from 'react';
 import { useInsightFlow } from '@/components/insight/use-insight-flow';
+import { useKnowledgeFlow } from '@/components/knowledge/use-knowledge-flow';
 import { AppBar } from '@/components/layout/app-bar';
 import { useAppData } from '@/lib/app-store';
 import { type InsightCategory, insightCategories } from '@/lib/insight-data';
+import { categoryIcons } from '@/lib/insight-icons';
 import { cn } from '@/lib/utils';
-
-const categoryIcons: Record<InsightCategory, LucideIcon> = {
-  音: Volume2,
-  振動: Activity,
-  匂い: Wind,
-  '量・重さ': Scale,
-  見た目: Eye,
-  その他: Sparkles,
-};
 
 const filters: ('すべて' | InsightCategory)[] = [
   'すべて',
@@ -30,7 +15,15 @@ const filters: ('すべて' | InsightCategory)[] = [
 
 export function InsightList() {
   const { insights } = useAppData();
-  const flow = useInsightFlow();
+  const knowledgeFlow = useKnowledgeFlow();
+  const flow = useInsightFlow({
+    onMakeKnowledge: (record) =>
+      knowledgeFlow.openNewWithDraft({
+        equipment: record.equipment,
+        symptom: record.problem,
+        photos: record.photos,
+      }),
+  });
   const [filter, setFilter] = useState<'すべて' | InsightCategory>('すべて');
 
   const filtered =
@@ -40,9 +33,9 @@ export function InsightList() {
 
   return (
     <div className="mx-auto flex min-h-[calc(100dvh-8rem)] w-full max-w-[430px] flex-col bg-white">
-      <div className="sticky top-0 z-30">
+      {/* ヘッダー＋フィルターを上部固定 */}
+      <div className="sticky top-0 z-30 bg-white">
         <AppBar title="気付き" />
-        {/* フィルターチップ */}
         <div className="flex gap-2 overflow-x-auto border-[#e5e7eb] border-b bg-white px-3 py-2">
           {filters.map((item) => {
             const active = filter === item;
@@ -122,6 +115,7 @@ export function InsightList() {
       </div>
 
       {flow.node}
+      {knowledgeFlow.node}
     </div>
   );
 }

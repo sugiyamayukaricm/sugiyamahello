@@ -9,6 +9,7 @@ import {
   formatShortDate,
   formatTime,
   type InsightDraft,
+  type InsightRecord,
 } from '@/lib/insight-data';
 
 type InsightFlow = {
@@ -17,11 +18,16 @@ type InsightFlow = {
   node: ReactNode;
 };
 
+type InsightFlowOptions = {
+  /** 「この気付きをナレッジにする」押下時の処理（詳細を閉じてから呼ばれる）。 */
+  onMakeKnowledge?: (record: InsightRecord) => void;
+};
+
 /**
  * 気付きの記録・詳細・修正・削除モーダルを一式まとめたフック。
  * タイムラインと気付き一覧の双方から同じ挙動で使えるようにしている。
  */
-export function useInsightFlow(): InsightFlow {
+export function useInsightFlow(options?: InsightFlowOptions): InsightFlow {
   const { insights, addInsight, updateInsight, removeInsight } = useAppData();
 
   const [recordOpen, setRecordOpen] = useState(false);
@@ -107,6 +113,15 @@ export function useInsightFlow(): InsightFlow {
     showToast('気付きを削除しました');
   };
 
+  const handleMakeKnowledge = () => {
+    if (options?.onMakeKnowledge && detailRecord) {
+      setDetailOpen(false);
+      options.onMakeKnowledge(detailRecord);
+      return;
+    }
+    showToast('ナレッジに登録しました（プロトタイプ）');
+  };
+
   const node = (
     <>
       <InsightRecordModal
@@ -133,9 +148,7 @@ export function useInsightFlow(): InsightFlow {
         dateLabel={shortDate}
         onEdit={handleEditFromDetail}
         onDelete={() => setDeleteOpen(true)}
-        onMakeKnowledge={() =>
-          showToast('ナレッジに登録しました（プロトタイプ）')
-        }
+        onMakeKnowledge={handleMakeKnowledge}
       />
       <AlertModal
         open={deleteOpen}

@@ -107,7 +107,7 @@ export function KnowledgeRecordModal({
 
   return (
     <HalfModal open={open} onOpenChange={onOpenChange}>
-      <HalfModalContent>
+      <HalfModalContent variant="full">
         <HalfModalHeader
           title={mode === 'edit' ? 'ナレッジ編集' : 'ナレッジ記録'}
           meta={
