@@ -1,10 +1,11 @@
 import { type ReactNode, useMemo, useRef, useState } from 'react';
-import { InsightCompleteModal } from '@/components/insight/insight-complete-modal';
-import { InsightDetailModal } from '@/components/insight/insight-detail-modal';
-import { InsightRecordModal } from '@/components/insight/insight-record-modal';
-import { KnowledgeDetailModal } from '@/components/knowledge/knowledge-detail-modal';
-import { KnowledgeRecordModal } from '@/components/knowledge/knowledge-record-modal';
+import { InsightCompleteView } from '@/components/insight/insight-complete-view';
+import { InsightDetailView } from '@/components/insight/insight-detail-view';
+import { InsightRecordView } from '@/components/insight/insight-record-view';
+import { KnowledgeDetailView } from '@/components/knowledge/knowledge-detail-view';
+import { KnowledgeRecordView } from '@/components/knowledge/knowledge-record-view';
 import { AlertModal } from '@/components/ui/alert-modal';
+import { HalfModal, HalfModalContent } from '@/components/ui/half-modal';
 import { Toast } from '@/components/ui/toast';
 import { useAppData } from '@/lib/app-store';
 import {
@@ -17,8 +18,19 @@ import {
   type KnowledgeDraft,
 } from '@/lib/knowledge-data';
 
-// 詳細モーダルのスタック。末尾（top）が現在表示中。
-type DetailView = { kind: 'insight' | 'knowledge'; id: string };
+// モーダル内で差し替える「ビュー」。スタックの末尾が現在表示中。
+type View =
+  | { kind: 'insight-record'; editingId: string | null }
+  | { kind: 'insight-complete'; id: string }
+  | { kind: 'insight-detail'; id: string }
+  | {
+      kind: 'knowledge-record';
+      editingId: string | null;
+      prefill?: KnowledgeDraft;
+    }
+  | { kind: 'knowledge-detail'; id: string };
+
+type DeleteTarget = { kind: 'insight' | 'knowledge'; id: string };
 
 type AppModals = {
   openInsightDetail: (id: string) => void;
@@ -29,8 +41,9 @@ type AppModals = {
 };
 
 /**
- * 気付き／ナレッジの記録・詳細・修正・削除モーダルを一括管理するフック。
- * 詳細モーダルはスタックで管理し「←＝1つ戻る／×＝全部閉じる」を実現する。
+ * 気付き／ナレッジの記録・詳細・完了を「1つの全面モーダル」で扱うフック。
+ * ビューをスタックで差し替える＝モーダルを開き直さずに画面遷移する。
+ * ←＝1つ前のビューへ、×＝モーダルごと閉じる。
  */
 export function useAppModals(): AppModals {
   const {
@@ -44,28 +57,17 @@ export function useAppModals(): AppModals {
     removeKnowledge,
   } = useAppData();
 
-  const [stack, setStack] = useState<DetailView[]>([]);
-  const top = stack.at(-1) ?? null;
-
-  const [insightRecordOpen, setInsightRecordOpen] = useState(false);
-  const [insightEditingId, setInsightEditingId] = useState<string | null>(null);
-  const [completeOpen, setCompleteOpen] = useState(false);
-
-  const [knowledgeRecordOpen, setKnowledgeRecordOpen] = useState(false);
-  const [knowledgeEditingId, setKnowledgeEditingId] = useState<string | null>(
-    null
-  );
-  const [knowledgePrefill, setKnowledgePrefill] = useState<
-    KnowledgeDraft | undefined
-  >(undefined);
-
-  const [deleteTarget, setDeleteTarget] = useState<DetailView | null>(null);
-
+  const [stack, setStack] = useState<View[]>([]);
+  const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastViewRef = useRef<View | null>(null);
 
   const shortDate = useMemo(() => formatShortDate(new Date()), []);
   const defaultTime = useMemo(() => formatTime(new Date()), []);
+
+  const top = stack.at(-1) ?? null;
+  const canGoBack = stack.length > 1;
 
   const showToast = (message: string) => {
     setToast(message);
@@ -75,15 +77,20 @@ export function useAppModals(): AppModals {
     toastTimer.current = setTimeout(() => setToast(null), 2500);
   };
 
-  // --- 現在表示中のデータ ---
-  const insightTop =
-    top?.kind === 'insight'
-      ? (insights.find((i) => i.id === top.id) ?? null)
-      : null;
-  const knowledgeTop =
-    top?.kind === 'knowledge'
-      ? (knowledge.find((k) => k.id === top.id) ?? null)
-      : null;
+  const push = (view: View) => setStack((s) => [...s, view]);
+  const replaceTop = (view: View) => setStack((s) => [...s.slice(0, -1), view]);
+  const back = () => setStack((s) => s.slice(0, -1));
+  const closeAll = () => setStack([]);
+
+  // 外部（一覧・タイムライン）からの起動
+  const openInsightDetail = (id: string) =>
+    setStack([{ kind: 'insight-detail', id }]);
+  const openKnowledgeDetail = (id: string) =>
+    setStack([{ kind: 'knowledge-detail', id }]);
+  const openNewInsight = () =>
+    setStack([{ kind: 'insight-record', editingId: null }]);
+  const openNewKnowledge = () =>
+    setStack([{ kind: 'knowledge-record', editingId: null }]);
 
   const relatedKnowledge = useMemo(
     () =>
@@ -93,10 +100,8 @@ export function useAppModals(): AppModals {
     [knowledge]
   );
 
-  const insightEditingDraft: InsightDraft | undefined = useMemo(() => {
-    const record = insightEditingId
-      ? insights.find((i) => i.id === insightEditingId)
-      : null;
+  const draftFromInsight = (id: string): InsightDraft | undefined => {
+    const record = insights.find((i) => i.id === id);
     if (!record) {
       return undefined;
     }
@@ -108,12 +113,10 @@ export function useAppModals(): AppModals {
       photos: record.photos,
       author: record.author,
     };
-  }, [insightEditingId, insights]);
+  };
 
-  const knowledgeEditingDraft: KnowledgeDraft | undefined = useMemo(() => {
-    const record = knowledgeEditingId
-      ? knowledge.find((k) => k.id === knowledgeEditingId)
-      : null;
+  const draftFromKnowledge = (id: string): KnowledgeDraft | undefined => {
+    const record = knowledge.find((k) => k.id === id);
     if (!record) {
       return undefined;
     }
@@ -127,91 +130,8 @@ export function useAppModals(): AppModals {
       photos: record.photos,
       author: record.author,
     };
-  }, [knowledgeEditingId, knowledge]);
-
-  // --- スタック操作 ---
-  const back = () => setStack((s) => s.slice(0, -1));
-  const closeAll = () => setStack([]);
-
-  // --- 起動（一覧・タイムラインから） ---
-  const openInsightDetail = (id: string) => setStack([{ kind: 'insight', id }]);
-  const openKnowledgeDetail = (id: string) =>
-    setStack([{ kind: 'knowledge', id }]);
-  const openNewInsight = () => {
-    setInsightEditingId(null);
-    setInsightRecordOpen(true);
-  };
-  const openNewKnowledge = () => {
-    setKnowledgeEditingId(null);
-    setKnowledgePrefill(undefined);
-    setKnowledgeRecordOpen(true);
   };
 
-  // --- 記録フォーム submit ---
-  const submitInsight = (draft: InsightDraft) => {
-    if (insightEditingId) {
-      updateInsight(insightEditingId, draft);
-      setInsightRecordOpen(false);
-      setInsightEditingId(null);
-      return;
-    }
-    addInsight(draft);
-    setInsightRecordOpen(false);
-    setCompleteOpen(true);
-  };
-
-  const submitKnowledge = (draft: KnowledgeDraft) => {
-    if (knowledgeEditingId) {
-      updateKnowledge(knowledgeEditingId, draft);
-      setKnowledgeRecordOpen(false);
-      setKnowledgeEditingId(null);
-      showToast('ナレッジを更新しました');
-      return;
-    }
-    addKnowledge(draft);
-    setKnowledgeRecordOpen(false);
-    setKnowledgePrefill(undefined);
-    showToast('ナレッジを登録しました');
-  };
-
-  // --- 詳細内アクション ---
-  const editInsight = () => {
-    if (insightTop) {
-      setInsightEditingId(insightTop.id);
-      setInsightRecordOpen(true);
-    }
-  };
-  const makeKnowledgeFromInsight = () => {
-    if (!insightTop) {
-      return;
-    }
-    setKnowledgeEditingId(null);
-    setKnowledgePrefill({
-      ...createEmptyKnowledgeDraft(),
-      equipment: insightTop.equipment,
-      symptom: insightTop.problem,
-      photos: insightTop.photos,
-    });
-    setKnowledgeRecordOpen(true);
-  };
-  const openRelatedKnowledge = () => {
-    if (relatedKnowledge) {
-      setStack((s) => [...s, { kind: 'knowledge', id: relatedKnowledge.id }]);
-    }
-  };
-  const editKnowledge = () => {
-    if (knowledgeTop) {
-      setKnowledgeEditingId(knowledgeTop.id);
-      setKnowledgeRecordOpen(true);
-    }
-  };
-
-  // --- 削除（確認アラート → 実削除 → topをpop） ---
-  const requestDelete = () => {
-    if (top) {
-      setDeleteTarget(top);
-    }
-  };
   const confirmDelete = () => {
     if (!deleteTarget) {
       return;
@@ -224,75 +144,149 @@ export function useAppModals(): AppModals {
       showToast('ナレッジを削除しました');
     }
     setDeleteTarget(null);
-    setStack((s) => s.slice(0, -1));
+    back();
   };
 
-  const canGoBack = stack.length > 1;
+  const buildView = (view: View): ReactNode => {
+    const backBtn = canGoBack ? back : undefined;
+
+    switch (view.kind) {
+      case 'insight-record':
+        return (
+          <InsightRecordView
+            key="insight-record"
+            dateLabel={shortDate}
+            defaultTime={defaultTime}
+            initialDraft={
+              view.editingId ? draftFromInsight(view.editingId) : undefined
+            }
+            onBack={backBtn}
+            onSubmit={(draft) => {
+              if (view.editingId) {
+                updateInsight(view.editingId, draft);
+                back();
+                showToast('気付きを更新しました');
+              } else {
+                const id = addInsight(draft);
+                replaceTop({ kind: 'insight-complete', id });
+                showToast('気付きを記録しました');
+              }
+            }}
+          />
+        );
+
+      case 'insight-complete': {
+        const related = insights
+          .filter((i) => i.id !== view.id)
+          .slice(0, 2)
+          .map((i) => ({
+            id: i.id,
+            label: i.problem || i.category || '気付き',
+          }));
+        return (
+          <InsightCompleteView
+            key="insight-complete"
+            relatedInsights={related}
+            onOpenInsight={(id) => push({ kind: 'insight-detail', id })}
+            onClose={closeAll}
+          />
+        );
+      }
+
+      case 'insight-detail':
+        return (
+          <InsightDetailView
+            key={`insight-detail-${view.id}`}
+            record={insights.find((i) => i.id === view.id) ?? null}
+            dateLabel={shortDate}
+            relatedKnowledgeTitle={relatedKnowledge?.title}
+            onOpenRelatedKnowledge={
+              relatedKnowledge
+                ? () =>
+                    push({ kind: 'knowledge-detail', id: relatedKnowledge.id })
+                : undefined
+            }
+            onBack={backBtn}
+            onEdit={() => push({ kind: 'insight-record', editingId: view.id })}
+            onDelete={() => setDeleteTarget({ kind: 'insight', id: view.id })}
+            onMakeKnowledge={() => {
+              const insight = insights.find((i) => i.id === view.id);
+              push({
+                kind: 'knowledge-record',
+                editingId: null,
+                prefill: {
+                  ...createEmptyKnowledgeDraft(),
+                  equipment: insight?.equipment ?? '',
+                  symptom: insight?.problem ?? '',
+                  photos: insight?.photos ?? [],
+                },
+              });
+            }}
+          />
+        );
+
+      case 'knowledge-record':
+        return (
+          <KnowledgeRecordView
+            key="knowledge-record"
+            mode={view.editingId ? 'edit' : 'new'}
+            dateLabel={shortDate}
+            initialDraft={
+              view.editingId ? draftFromKnowledge(view.editingId) : view.prefill
+            }
+            onBack={backBtn}
+            onSubmit={(draft) => {
+              if (view.editingId) {
+                updateKnowledge(view.editingId, draft);
+                back();
+                showToast('ナレッジを更新しました');
+              } else {
+                const id = addKnowledge(draft);
+                replaceTop({ kind: 'knowledge-detail', id });
+                showToast('ナレッジを登録しました');
+              }
+            }}
+          />
+        );
+
+      case 'knowledge-detail':
+        return (
+          <KnowledgeDetailView
+            key={`knowledge-detail-${view.id}`}
+            record={knowledge.find((k) => k.id === view.id) ?? null}
+            onBack={backBtn}
+            onEdit={() =>
+              push({ kind: 'knowledge-record', editingId: view.id })
+            }
+            onDelete={() => setDeleteTarget({ kind: 'knowledge', id: view.id })}
+          />
+        );
+
+      default:
+        return null;
+    }
+  };
+
+  if (top) {
+    lastViewRef.current = top;
+  }
+  // 閉じるアニメーション中は直前のビューを表示し続ける
+  const viewToRender = top ?? lastViewRef.current;
 
   const node = (
     <>
-      <InsightRecordModal
-        open={insightRecordOpen}
-        onOpenChange={(o) => {
-          setInsightRecordOpen(o);
-          if (!o) {
-            setInsightEditingId(null);
-          }
-        }}
-        dateLabel={shortDate}
-        defaultTime={defaultTime}
-        initialDraft={insightEditingDraft}
-        onSubmit={submitInsight}
-      />
-      <InsightCompleteModal
-        open={completeOpen}
-        onOpenChange={setCompleteOpen}
-      />
-      <InsightDetailModal
-        open={top?.kind === 'insight'}
+      <HalfModal
+        open={stack.length > 0}
         onOpenChange={(o) => {
           if (!o) {
             closeAll();
           }
         }}
-        record={insightTop}
-        dateLabel={shortDate}
-        relatedKnowledgeTitle={relatedKnowledge?.title}
-        onOpenRelatedKnowledge={
-          relatedKnowledge ? openRelatedKnowledge : undefined
-        }
-        onBack={canGoBack ? back : undefined}
-        onEdit={editInsight}
-        onDelete={requestDelete}
-        onMakeKnowledge={makeKnowledgeFromInsight}
-      />
-
-      <KnowledgeRecordModal
-        open={knowledgeRecordOpen}
-        onOpenChange={(o) => {
-          setKnowledgeRecordOpen(o);
-          if (!o) {
-            setKnowledgeEditingId(null);
-            setKnowledgePrefill(undefined);
-          }
-        }}
-        mode={knowledgeEditingId ? 'edit' : 'new'}
-        dateLabel={shortDate}
-        initialDraft={knowledgeEditingDraft ?? knowledgePrefill}
-        onSubmit={submitKnowledge}
-      />
-      <KnowledgeDetailModal
-        open={top?.kind === 'knowledge'}
-        onOpenChange={(o) => {
-          if (!o) {
-            closeAll();
-          }
-        }}
-        record={knowledgeTop}
-        onBack={canGoBack ? back : undefined}
-        onEdit={editKnowledge}
-        onDelete={requestDelete}
-      />
+      >
+        <HalfModalContent variant="full">
+          {viewToRender ? buildView(viewToRender) : null}
+        </HalfModalContent>
+      </HalfModal>
 
       <AlertModal
         open={deleteTarget !== null}
