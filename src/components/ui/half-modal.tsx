@@ -1,5 +1,5 @@
 import { Dialog as DialogPrimitive } from '@base-ui/react/dialog';
-import { XIcon } from 'lucide-react';
+import { ChevronLeft, XIcon } from 'lucide-react';
 import type * as React from 'react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -48,15 +48,21 @@ function HalfModalContent({
   );
 }
 
-/** 中央にタイトル、右に閉じるボタンを持つスティッキーヘッダー。 */
+/**
+ * 中央にタイトル、右に閉じる(×)ボタンを持つスティッキーヘッダー。
+ * onBack を渡すと左に戻る(←)ボタンを表示する（戻り先があるときだけ）。
+ * ×（HalfModalClose）は onOpenChange(false) を発火する＝全て閉じる用途。
+ */
 function HalfModalHeader({
   className,
   title,
   meta,
+  onBack,
   ...props
 }: React.ComponentProps<'div'> & {
   title: React.ReactNode;
   meta?: React.ReactNode;
+  onBack?: () => void;
 }) {
   return (
     <div
@@ -67,7 +73,20 @@ function HalfModalHeader({
       )}
       {...props}
     >
-      <div className="w-[76px] shrink-0" aria-hidden />
+      <div className="flex w-[76px] shrink-0 items-center">
+        {onBack ? (
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            className="text-[#374151]"
+            onClick={onBack}
+            aria-label="戻る"
+          >
+            <ChevronLeft />
+          </Button>
+        ) : null}
+      </div>
       <div className="flex flex-1 flex-col items-center justify-center gap-1">
         <HalfModalTitle className="text-center text-[#030712] text-base leading-6">
           {title}

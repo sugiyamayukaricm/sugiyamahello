@@ -23,6 +23,7 @@ type KnowledgeDetailModalProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   record: KnowledgeRecord | null;
+  onBack?: () => void;
   onEdit: () => void;
   onDelete: () => void;
 };
@@ -31,13 +32,14 @@ export function KnowledgeDetailModal({
   open,
   onOpenChange,
   record,
+  onBack,
   onEdit,
   onDelete,
 }: KnowledgeDetailModalProps) {
   return (
     <HalfModal open={open} onOpenChange={onOpenChange}>
-      <HalfModalContent variant="full">
-        <HalfModalHeader title="ナレッジ" />
+      <HalfModalContent className="max-h-[438px]">
+        <HalfModalHeader title="ナレッジ" onBack={onBack} />
 
         {record ? (
           <>

@@ -1,4 +1,4 @@
-import { BookOpen } from 'lucide-react';
+import { BookOpen, ChevronRight } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
 import {
@@ -26,6 +26,9 @@ type InsightDetailModalProps = {
   onOpenChange: (open: boolean) => void;
   record: InsightRecord | null;
   dateLabel: string;
+  relatedKnowledgeTitle?: string;
+  onOpenRelatedKnowledge?: () => void;
+  onBack?: () => void;
   onEdit: () => void;
   onDelete: () => void;
   onMakeKnowledge: () => void;
@@ -36,14 +39,18 @@ export function InsightDetailModal({
   onOpenChange,
   record,
   dateLabel,
+  relatedKnowledgeTitle,
+  onOpenRelatedKnowledge,
+  onBack,
   onEdit,
   onDelete,
   onMakeKnowledge,
 }: InsightDetailModalProps) {
+  const knowledgeTitle = relatedKnowledgeTitle ?? knowledgeSuggestion.knowledge;
   return (
     <HalfModal open={open} onOpenChange={onOpenChange}>
-      <HalfModalContent variant="full">
-        <HalfModalHeader title="気付き記録" />
+      <HalfModalContent className="max-h-[438px]">
+        <HalfModalHeader title="気付き記録" onBack={onBack} />
 
         {record ? (
           <>
@@ -73,12 +80,22 @@ export function InsightDetailModal({
                 <div className="font-bold text-[#030712] text-sm">
                   関連ナレッジ
                 </div>
-                <span className="inline-flex max-w-full items-center gap-2 self-start rounded-lg border border-[#d1d5db] bg-white px-3 py-1.5 text-[#030712] text-sm">
-                  <BookOpen className="size-4 shrink-0 text-[#374151]" />
-                  <span className="truncate">
-                    {knowledgeSuggestion.knowledge}
+                {onOpenRelatedKnowledge ? (
+                  <button
+                    type="button"
+                    onClick={onOpenRelatedKnowledge}
+                    className="inline-flex max-w-full items-center gap-2 self-start rounded-lg border border-[#d1d5db] bg-white px-3 py-1.5 text-[#030712] text-sm transition-colors hover:bg-[#f3f4f6]"
+                  >
+                    <BookOpen className="size-4 shrink-0 text-[#374151]" />
+                    <span className="truncate">{knowledgeTitle}</span>
+                    <ChevronRight className="size-4 shrink-0 text-[#9ca3af]" />
+                  </button>
+                ) : (
+                  <span className="inline-flex max-w-full items-center gap-2 self-start rounded-lg border border-[#d1d5db] bg-white px-3 py-1.5 text-[#030712] text-sm">
+                    <BookOpen className="size-4 shrink-0 text-[#374151]" />
+                    <span className="truncate">{knowledgeTitle}</span>
                   </span>
-                </span>
+                )}
               </div>
 
               <div className="flex flex-col gap-0.5 pt-1 text-center text-[#030712b0] text-sm">

@@ -1,7 +1,6 @@
 import { ChevronDown } from 'lucide-react';
 import { useMemo } from 'react';
-import { useInsightFlow } from '@/components/insight/use-insight-flow';
-import { useKnowledgeFlow } from '@/components/knowledge/use-knowledge-flow';
+import { useAppModals } from '@/components/app-modals';
 import { AppBar } from '@/components/layout/app-bar';
 import { useAppData } from '@/lib/app-store';
 import { formatDateLabel } from '@/lib/insight-data';
@@ -10,15 +9,7 @@ const hours = Array.from({ length: 24 }, (_, hour) => hour);
 
 export function Insight() {
   const { insights } = useAppData();
-  const knowledgeFlow = useKnowledgeFlow();
-  const flow = useInsightFlow({
-    onMakeKnowledge: (record) =>
-      knowledgeFlow.openNewWithDraft({
-        equipment: record.equipment,
-        symptom: record.problem,
-        photos: record.photos,
-      }),
-  });
+  const modals = useAppModals();
 
   const today = useMemo(() => new Date(), []);
   const dateLabel = formatDateLabel(today);
@@ -70,7 +61,7 @@ export function Insight() {
                   <button
                     key={item.id}
                     type="button"
-                    onClick={() => flow.openDetail(item.id)}
+                    onClick={() => modals.openInsightDetail(item.id)}
                     className="flex h-8 w-full items-center gap-2 rounded-lg bg-[#e5e7eb] px-2 py-1 text-left transition-colors hover:bg-[#d9dde3]"
                   >
                     <span className="w-5 shrink-0 text-right text-[#030712] text-base leading-6">
@@ -92,15 +83,14 @@ export function Insight() {
       <div className="sticky bottom-0 z-20 bg-white px-4 py-4 shadow-[0px_-2px_8px_rgba(0,0,0,0.08)]">
         <button
           type="button"
-          onClick={flow.openNew}
+          onClick={modals.openNewInsight}
           className="w-full rounded-lg bg-[#1d4ed8] px-4 py-3.5 text-center font-medium text-sm text-white transition-colors hover:bg-[#1a45c0] active:translate-y-px"
         >
           気付き記録
         </button>
       </div>
 
-      {flow.node}
-      {knowledgeFlow.node}
+      {modals.node}
     </div>
   );
 }

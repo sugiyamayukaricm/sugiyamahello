@@ -1,7 +1,6 @@
 import { Sparkles } from 'lucide-react';
 import { useState } from 'react';
-import { useInsightFlow } from '@/components/insight/use-insight-flow';
-import { useKnowledgeFlow } from '@/components/knowledge/use-knowledge-flow';
+import { useAppModals } from '@/components/app-modals';
 import { AppBar } from '@/components/layout/app-bar';
 import { useAppData } from '@/lib/app-store';
 import { type InsightCategory, insightCategories } from '@/lib/insight-data';
@@ -15,15 +14,7 @@ const filters: ('すべて' | InsightCategory)[] = [
 
 export function InsightList() {
   const { insights } = useAppData();
-  const knowledgeFlow = useKnowledgeFlow();
-  const flow = useInsightFlow({
-    onMakeKnowledge: (record) =>
-      knowledgeFlow.openNewWithDraft({
-        equipment: record.equipment,
-        symptom: record.problem,
-        photos: record.photos,
-      }),
-  });
+  const modals = useAppModals();
   const [filter, setFilter] = useState<'すべて' | InsightCategory>('すべて');
 
   const filtered =
@@ -72,7 +63,7 @@ export function InsightList() {
               <button
                 key={item.id}
                 type="button"
-                onClick={() => flow.openDetail(item.id)}
+                onClick={() => modals.openInsightDetail(item.id)}
                 className="flex w-full items-center gap-3 border-[#e5e7eb] border-b px-4 py-3 text-left transition-colors hover:bg-[#f9fafb]"
               >
                 {item.photos[0] ? (
@@ -107,15 +98,14 @@ export function InsightList() {
       <div className="sticky bottom-0 z-20 bg-white px-4 py-4 shadow-[0px_-2px_8px_rgba(0,0,0,0.08)]">
         <button
           type="button"
-          onClick={flow.openNew}
+          onClick={modals.openNewInsight}
           className="w-full rounded-lg bg-[#1d4ed8] px-4 py-3.5 text-center font-medium text-sm text-white transition-colors hover:bg-[#1a45c0] active:translate-y-px"
         >
           気付き記録
         </button>
       </div>
 
-      {flow.node}
-      {knowledgeFlow.node}
+      {modals.node}
     </div>
   );
 }
