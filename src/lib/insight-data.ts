@@ -105,6 +105,28 @@ export const initialInsights: InsightRecord[] = [
     createdAt: '2024/8/9 8:10',
     updatedAt: '2024/8/9 8:10',
   },
+  {
+    id: 'insight-seed-4',
+    category: 'その他',
+    time: '16:05',
+    equipment: 'コンベア',
+    problem: '機械が止まって動かなくなった',
+    photos: [],
+    author: '',
+    createdAt: '2024/8/7 16:05',
+    updatedAt: '2024/8/7 16:05',
+  },
+  {
+    id: 'insight-seed-5',
+    category: '音',
+    time: '14:12',
+    equipment: '',
+    problem: '変な音がする',
+    photos: [],
+    author: '',
+    createdAt: '2024/8/8 14:12',
+    updatedAt: '2024/8/8 14:12',
+  },
 ];
 
 // 記録完了モーダルで見せるデモ用のレコメンド（静的）
