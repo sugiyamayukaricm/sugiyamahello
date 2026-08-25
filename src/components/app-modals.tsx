@@ -134,7 +134,6 @@ export function useAppModals(): AppModals {
       equipment: record.equipment,
       symptom: record.symptom,
       cause: record.cause,
-      duration: record.duration,
       pastCases: record.pastCases,
       photos: record.photos,
       author: record.author,

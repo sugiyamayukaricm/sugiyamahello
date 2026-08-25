@@ -97,9 +97,6 @@ export function KnowledgeDetailView({
           </div>
         )}
 
-        {record.duration ? (
-          <Field label="かかった時間" value={record.duration} />
-        ) : null}
         <Field label="過去の実績例" value={record.pastCases} />
 
         <div className="flex flex-col gap-0.5 pt-1 text-center text-[#030712b0] text-sm">

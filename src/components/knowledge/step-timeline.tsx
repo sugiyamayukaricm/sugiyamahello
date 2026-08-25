@@ -74,7 +74,7 @@ export function StepTimeline({
     : '-日--時間--分';
 
   return (
-    <div className="flex w-full max-w-[343px] flex-col gap-2 rounded-lg bg-[#f3f4f6] px-4 py-2">
+    <div className="flex w-full flex-col gap-2 rounded-lg bg-[#f3f4f6] px-4 py-2">
       <button
         type="button"
         onClick={() => setOpen((prev) => !prev)}

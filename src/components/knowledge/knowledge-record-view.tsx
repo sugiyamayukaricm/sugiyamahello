@@ -1,4 +1,4 @@
-import { Calendar, Loader2, RotateCw, X } from 'lucide-react';
+import { Calendar, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { PlcHistorySection } from '@/components/knowledge/plc-history-section';
 import { StepTimeline } from '@/components/knowledge/step-timeline';
@@ -19,11 +19,7 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import type { InsightPhoto } from '@/lib/insight-data';
-import {
-  authorOptions,
-  equipmentOptions,
-  type KnowledgeDraft,
-} from '@/lib/knowledge-data';
+import { equipmentOptions, type KnowledgeDraft } from '@/lib/knowledge-data';
 import { fetchPlcCandidates, type PlcFetchStatus } from '@/lib/plc-data';
 import { cn } from '@/lib/utils';
 
@@ -56,7 +52,6 @@ export function KnowledgeRecordView({
 }: KnowledgeRecordViewProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [plcStatus, setPlcStatus] = useState<PlcFetchStatus>('idle');
-  const [durationLoading, setDurationLoading] = useState(false);
   const mountedRef = useRef(true);
   useEffect(() => {
     mountedRef.current = true;
@@ -118,17 +113,6 @@ export function KnowledgeRecordView({
         setPlcStatus('error');
       }
     }, 600);
-  };
-
-  const handleFetchDuration = () => {
-    setDurationLoading(true);
-    setTimeout(() => {
-      if (!mountedRef.current) {
-        return;
-      }
-      update('duration', '25分');
-      setDurationLoading(false);
-    }, 400);
   };
 
   const deriveTitle = (symptom: string) => {
@@ -217,31 +201,6 @@ export function KnowledgeRecordView({
         />
 
         <div className="flex flex-col gap-1">
-          <div className="flex items-center justify-between px-1 py-2">
-            <Label className="text-[#374151]">かかった時間</Label>
-            <button
-              type="button"
-              onClick={handleFetchDuration}
-              disabled={durationLoading}
-              className="flex items-center gap-2 rounded-lg border border-[#d4d4d4] px-2 py-1 text-[#374151] text-xs disabled:opacity-40"
-            >
-              {durationLoading ? (
-                <Loader2 className="size-4 animate-spin" />
-              ) : (
-                <RotateCw className="size-4" />
-              )}
-              取得
-            </button>
-          </div>
-          <Input
-            value={draft.duration}
-            onChange={(event) => update('duration', event.target.value)}
-            placeholder="このナレッジを達成するためにかかる時間"
-            className={cn(fieldClassName, 'h-12')}
-          />
-        </div>
-
-        <div className="flex flex-col gap-1">
           <Label className="px-1 text-[#374151]">過去の実績例（任意）</Label>
           <Textarea
             value={draft.pastCases}
@@ -298,21 +257,12 @@ export function KnowledgeRecordView({
 
         <div className="flex flex-col gap-1">
           <Label className="px-1 text-[#374151]">記入者</Label>
-          <Select
+          <Input
             value={draft.author}
-            onValueChange={(value) => update('author', value ?? '')}
-          >
-            <SelectTrigger className={cn(fieldClassName, 'h-12 w-full')}>
-              <SelectValue placeholder="選択してください" />
-            </SelectTrigger>
-            <SelectContent>
-              {authorOptions.map((item) => (
-                <SelectItem key={item} value={item}>
-                  {item}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            onChange={(event) => update('author', event.target.value)}
+            placeholder="名前を入力してください"
+            className={cn(fieldClassName, 'h-12')}
+          />
         </div>
       </HalfModalBody>
 
