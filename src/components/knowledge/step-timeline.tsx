@@ -1,5 +1,5 @@
 import { ChevronDown } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   formatDurationJa,
   formatPlcDateTime,
@@ -21,6 +21,7 @@ type StepTimelineProps = {
   knowledgeAt: Date | null;
   /** 現在時刻。未記録時の合計表示に使う（呼び出し側で `new Date()` を1回だけ評価して渡す）。 */
   now: Date;
+  /** 明示指定時のみこの値を使う。未指定なら「候補が選択済みなら展開」を初期値にする。 */
   defaultOpen?: boolean;
 };
 
@@ -56,9 +57,17 @@ export function StepTimeline({
   candidate,
   knowledgeAt,
   now,
-  defaultOpen = false,
+  defaultOpen,
 }: StepTimelineProps) {
-  const [open, setOpen] = useState(defaultOpen);
+  const [open, setOpen] = useState(defaultOpen ?? candidate !== null);
+  // PLC候補が「未選択→選択済み」に変わった瞬間（取得成功直後）は自動で展開する。
+  const hadCandidateRef = useRef(candidate !== null);
+  useEffect(() => {
+    if (!hadCandidateRef.current && candidate !== null) {
+      setOpen(true);
+    }
+    hadCandidateRef.current = candidate !== null;
+  }, [candidate]);
   const steps = buildSteps(insightAt, candidate, knowledgeAt);
   const totalLabel = insightAt
     ? formatDurationJa((knowledgeAt ?? now).getTime() - insightAt.getTime())
