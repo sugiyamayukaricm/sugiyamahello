@@ -1,7 +1,10 @@
 import { Link, Outlet, useLocation } from 'react-router';
 import { cn } from '@/lib/utils';
 
-const navItems = [{ to: '/', label: 'ホーム' }];
+const navItems = [
+  { to: '/', label: '仮説提案' },
+  { to: '/insight', label: 'タイムライン気づき' },
+];
 
 export function AppShell() {
   const location = useLocation();
