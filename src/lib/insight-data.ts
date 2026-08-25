@@ -159,3 +159,21 @@ export function formatTime(date: Date): string {
 export function formatDateTime(date: Date): string {
   return `${formatShortDate(date)} ${formatTime(date)}`;
 }
+
+/** "2024/8/9 1:21" のような表示用文字列を Date に戻す。パースできなければ null。 */
+export function parseAppDateTime(value: string): Date | null {
+  const match = value.match(
+    /^(\d{4})\/(\d{1,2})\/(\d{1,2})\s+(\d{1,2}):(\d{1,2})/
+  );
+  if (!match) {
+    return null;
+  }
+  const [, year, month, day, hour, minute] = match;
+  return new Date(
+    Number(year),
+    Number(month) - 1,
+    Number(day),
+    Number(hour),
+    Number(minute)
+  );
+}

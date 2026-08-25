@@ -1,10 +1,13 @@
+import { StepTimeline } from '@/components/knowledge/step-timeline';
 import { Button } from '@/components/ui/button';
 import {
   HalfModalBody,
   HalfModalFooter,
   HalfModalHeader,
 } from '@/components/ui/half-modal';
+import { parseAppDateTime } from '@/lib/insight-data';
 import type { KnowledgeRecord } from '@/lib/knowledge-data';
+import { formatPlcDateTime, plcDurationMinutes } from '@/lib/plc-data';
 
 function Field({ label, value }: { label: string; value: string }) {
   return (
@@ -34,10 +37,22 @@ export function KnowledgeDetailView({
   if (!record) {
     return <HalfModalHeader title="ナレッジ" onBack={onBack} />;
   }
+
+  const selectedCandidate =
+    record.plcCandidates.find((item) => item.id === record.selectedPlcId) ??
+    null;
+
   return (
     <>
       <HalfModalHeader title="ナレッジ" onBack={onBack} />
       <HalfModalBody className="flex flex-col gap-4 px-4 pt-1 pb-4">
+        <StepTimeline
+          insightAt={record.insightAt}
+          candidate={selectedCandidate}
+          knowledgeAt={parseAppDateTime(record.createdAt)}
+          now={new Date()}
+        />
+
         <div className="flex flex-col gap-0.5">
           <h2 className="font-bold text-[#030712] text-lg leading-7">
             {record.title}
@@ -63,6 +78,25 @@ export function KnowledgeDetailView({
 
         <Field label="症状・確認ポイント" value={record.symptom} />
         <Field label="原因と対応" value={record.cause} />
+
+        {selectedCandidate && (
+          <div className="flex flex-col gap-1">
+            <div className="font-bold text-[#030712b0] text-sm">
+              PLC関連付け
+            </div>
+            <div className="flex w-full flex-col gap-1 rounded-lg bg-[#374151] px-3 py-1.5">
+              <span className="text-[#f9fafb] text-sm">
+                {selectedCandidate.title}
+              </span>
+              <div className="w-full rounded bg-white p-1 text-[#374151] text-xs leading-4">
+                <p>発生：{formatPlcDateTime(selectedCandidate.occurredAt)}</p>
+                <p>復旧：{formatPlcDateTime(selectedCandidate.recoveredAt)}</p>
+                <p>継続時間（分）：{plcDurationMinutes(selectedCandidate)}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {record.duration ? (
           <Field label="かかった時間" value={record.duration} />
         ) : null}

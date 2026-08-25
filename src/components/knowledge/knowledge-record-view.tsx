@@ -1,5 +1,7 @@
-import { Calendar, X } from 'lucide-react';
-import { useRef, useState } from 'react';
+import { Calendar, Loader2, RotateCw, X } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { PlcHistorySection } from '@/components/knowledge/plc-history-section';
+import { StepTimeline } from '@/components/knowledge/step-timeline';
 import { Button } from '@/components/ui/button';
 import {
   HalfModalBody,
@@ -19,10 +21,10 @@ import { Textarea } from '@/components/ui/textarea';
 import type { InsightPhoto } from '@/lib/insight-data';
 import {
   authorOptions,
-  createEmptyKnowledgeDraft,
   equipmentOptions,
   type KnowledgeDraft,
 } from '@/lib/knowledge-data';
+import { fetchPlcCandidates, type PlcFetchStatus } from '@/lib/plc-data';
 import { cn } from '@/lib/utils';
 
 const fieldClassName =
@@ -31,46 +33,58 @@ const fieldClassName =
 type KnowledgeRecordViewProps = {
   mode: 'new' | 'edit';
   dateLabel: string;
-  initialDraft?: KnowledgeDraft;
+  /** 現在の入力内容。呼び出し側（app-modals）で保持し、履歴選択モーダルへの遷移をまたいで残す。 */
+  draft: KnowledgeDraft;
+  onChange: (draft: KnowledgeDraft) => void;
   onSubmit: (draft: KnowledgeDraft) => void;
+  onOpenPlcHistory: () => void;
   onBack?: () => void;
+  /** 編集対象の既存ナレッジが実際に記録された日時。新規作成時は null。 */
+  knowledgeAt?: Date | null;
 };
 
 /** モーダル内に差し込む「ナレッジ記録／編集」入力ビュー。 */
 export function KnowledgeRecordView({
   mode,
   dateLabel,
-  initialDraft,
+  draft,
+  onChange,
   onSubmit,
+  onOpenPlcHistory,
   onBack,
+  knowledgeAt = null,
 }: KnowledgeRecordViewProps) {
-  const [draft, setDraft] = useState<KnowledgeDraft>(
-    () => initialDraft ?? createEmptyKnowledgeDraft()
-  );
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [plcStatus, setPlcStatus] = useState<PlcFetchStatus>('idle');
+  const [durationLoading, setDurationLoading] = useState(false);
+  const mountedRef = useRef(true);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   const update = <K extends keyof KnowledgeDraft>(
     key: K,
     value: KnowledgeDraft[K]
   ) => {
-    setDraft((prev) => ({ ...prev, [key]: value }));
+    onChange({ ...draft, [key]: value });
   };
 
   const handleFiles = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files ?? []);
-    setDraft((prev) => {
-      const next: InsightPhoto[] = [...prev.photos];
-      for (const file of files) {
-        if (next.length >= 5) {
-          break;
-        }
-        next.push({
-          id: `${Date.now()}-${file.name}`,
-          url: URL.createObjectURL(file),
-        });
+    const next: InsightPhoto[] = [...draft.photos];
+    for (const file of files) {
+      if (next.length >= 5) {
+        break;
       }
-      return { ...prev, photos: next };
-    });
+      next.push({
+        id: `${Date.now()}-${file.name}`,
+        url: URL.createObjectURL(file),
+      });
+    }
+    update('photos', next);
     event.target.value = '';
   };
 
@@ -79,6 +93,42 @@ export function KnowledgeRecordView({
       'photos',
       draft.photos.filter((photo) => photo.id !== id)
     );
+  };
+
+  // 対象設備・気付き時刻（またはその代わりとなる現在時刻）・「取得」タップの3条件が
+  // 揃って初めてPLCデータを取得する。カテゴリ等からの自動判定は行わない。
+  const handleFetchPlc = () => {
+    if (!draft.equipment || plcStatus === 'loading') {
+      return;
+    }
+    setPlcStatus('loading');
+    setTimeout(() => {
+      if (!mountedRef.current) {
+        return;
+      }
+      const result = fetchPlcCandidates(draft.equipment, new Date());
+      if (result) {
+        onChange({
+          ...draft,
+          plcCandidates: result,
+          selectedPlcId: result[0]?.id ?? null,
+        });
+        setPlcStatus('idle');
+      } else {
+        setPlcStatus('error');
+      }
+    }, 600);
+  };
+
+  const handleFetchDuration = () => {
+    setDurationLoading(true);
+    setTimeout(() => {
+      if (!mountedRef.current) {
+        return;
+      }
+      update('duration', '25分');
+      setDurationLoading(false);
+    }, 400);
   };
 
   const deriveTitle = (symptom: string) => {
@@ -92,6 +142,9 @@ export function KnowledgeRecordView({
   const handleSubmit = () => {
     onSubmit({ ...draft, title: draft.title || deriveTitle(draft.symptom) });
   };
+
+  const selectedCandidate =
+    draft.plcCandidates.find((item) => item.id === draft.selectedPlcId) ?? null;
 
   return (
     <>
@@ -146,8 +199,40 @@ export function KnowledgeRecordView({
           />
         </div>
 
+        <PlcHistorySection
+          equipment={draft.equipment}
+          status={plcStatus}
+          candidates={draft.plcCandidates}
+          selectedId={draft.selectedPlcId}
+          onFetch={handleFetchPlc}
+          onOpenHistoryModal={onOpenPlcHistory}
+          onSelect={(id) => update('selectedPlcId', id)}
+        />
+
+        <StepTimeline
+          insightAt={draft.insightAt}
+          candidate={selectedCandidate}
+          knowledgeAt={knowledgeAt}
+          now={new Date()}
+        />
+
         <div className="flex flex-col gap-1">
-          <Label className="px-1 text-[#374151]">かかった時間</Label>
+          <div className="flex items-center justify-between px-1 py-2">
+            <Label className="text-[#374151]">かかった時間</Label>
+            <button
+              type="button"
+              onClick={handleFetchDuration}
+              disabled={durationLoading}
+              className="flex items-center gap-2 rounded-lg border border-[#d4d4d4] px-2 py-1 text-[#374151] text-xs disabled:opacity-40"
+            >
+              {durationLoading ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                <RotateCw className="size-4" />
+              )}
+              取得
+            </button>
+          </div>
           <Input
             value={draft.duration}
             onChange={(event) => update('duration', event.target.value)}

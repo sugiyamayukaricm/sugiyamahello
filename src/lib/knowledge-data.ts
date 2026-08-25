@@ -1,5 +1,6 @@
 import factoryImg from '@/assets/insight/factory.png';
 import { equipmentOptions, type InsightPhoto } from '@/lib/insight-data';
+import type { PlcCandidate } from '@/lib/plc-data';
 
 export { equipmentOptions };
 
@@ -17,6 +18,11 @@ export type KnowledgeRecord = {
   author: string;
   createdAt: string;
   updatedAt: string;
+  // PLC連携（設備異常履歴関連付け）
+  plcCandidates: PlcCandidate[]; // 取得済みの候補一覧（選択中も含む）
+  selectedPlcId: string | null; // 関連付けた候補のid（未選択はnull）
+  /** 気付き〜ナレッジのタイムラインの起点（気付き記録の日時）。気付き由来でなければ null。 */
+  insightAt: Date | null;
 };
 
 export type KnowledgeDraft = {
@@ -28,6 +34,9 @@ export type KnowledgeDraft = {
   pastCases: string;
   photos: InsightPhoto[];
   author: string;
+  plcCandidates: PlcCandidate[];
+  selectedPlcId: string | null;
+  insightAt: Date | null;
 };
 
 export function createEmptyKnowledgeDraft(): KnowledgeDraft {
@@ -40,6 +49,9 @@ export function createEmptyKnowledgeDraft(): KnowledgeDraft {
     pastCases: '',
     photos: [],
     author: '',
+    plcCandidates: [],
+    selectedPlcId: null,
+    insightAt: null,
   };
 }
 
@@ -61,6 +73,16 @@ export const initialKnowledge: KnowledgeRecord[] = [
     author: 'プラントOP共有 六手山',
     createdAt: '2024/8/9 1:21',
     updatedAt: '2024/8/9 1:21',
+    plcCandidates: [
+      {
+        id: 'plc-seed-1',
+        title: '成形ライン異常発生中',
+        occurredAt: new Date(2024, 7, 9, 0, 10),
+        recoveredAt: new Date(2024, 7, 9, 0, 35),
+      },
+    ],
+    selectedPlcId: 'plc-seed-1',
+    insightAt: new Date(2024, 7, 8, 22, 40),
   },
   {
     id: 'knowledge-seed-2',
@@ -76,5 +98,8 @@ export const initialKnowledge: KnowledgeRecord[] = [
     author: 'プラントOP共有 露手川',
     createdAt: '2024/8/8 22:10',
     updatedAt: '2024/8/8 22:10',
+    plcCandidates: [],
+    selectedPlcId: null,
+    insightAt: null,
   },
 ];

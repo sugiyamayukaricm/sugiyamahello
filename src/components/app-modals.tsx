@@ -4,6 +4,7 @@ import { InsightDetailView } from '@/components/insight/insight-detail-view';
 import { InsightRecordView } from '@/components/insight/insight-record-view';
 import { KnowledgeDetailView } from '@/components/knowledge/knowledge-detail-view';
 import { KnowledgeRecordView } from '@/components/knowledge/knowledge-record-view';
+import { PlcHistoryView } from '@/components/knowledge/plc-history-view';
 import { AlertModal } from '@/components/ui/alert-modal';
 import { HalfModal, HalfModalContent } from '@/components/ui/half-modal';
 import { Toast } from '@/components/ui/toast';
@@ -12,6 +13,7 @@ import {
   formatShortDate,
   formatTime,
   type InsightDraft,
+  parseAppDateTime,
 } from '@/lib/insight-data';
 import {
   createEmptyKnowledgeDraft,
@@ -26,9 +28,10 @@ type View =
   | {
       kind: 'knowledge-record';
       editingId: string | null;
-      prefill?: KnowledgeDraft;
+      draft: KnowledgeDraft;
     }
-  | { kind: 'knowledge-detail'; id: string };
+  | { kind: 'knowledge-detail'; id: string }
+  | { kind: 'plc-history' };
 
 type DeleteTarget = { kind: 'insight' | 'knowledge'; id: string };
 
@@ -90,7 +93,13 @@ export function useAppModals(): AppModals {
   const openNewInsight = () =>
     setStack([{ kind: 'insight-record', editingId: null }]);
   const openNewKnowledge = () =>
-    setStack([{ kind: 'knowledge-record', editingId: null }]);
+    setStack([
+      {
+        kind: 'knowledge-record',
+        editingId: null,
+        draft: createEmptyKnowledgeDraft(),
+      },
+    ]);
 
   const relatedKnowledge = useMemo(
     () =>
@@ -129,6 +138,9 @@ export function useAppModals(): AppModals {
       pastCases: record.pastCases,
       photos: record.photos,
       author: record.author,
+      plcCandidates: record.plcCandidates,
+      selectedPlcId: record.selectedPlcId,
+      insightAt: record.insightAt,
     };
   };
 
@@ -214,26 +226,35 @@ export function useAppModals(): AppModals {
               push({
                 kind: 'knowledge-record',
                 editingId: null,
-                prefill: {
+                draft: {
                   ...createEmptyKnowledgeDraft(),
                   equipment: insight?.equipment ?? '',
                   symptom: insight?.problem ?? '',
                   photos: insight?.photos ?? [],
+                  insightAt: insight
+                    ? parseAppDateTime(insight.createdAt)
+                    : null,
                 },
               });
             }}
           />
         );
 
-      case 'knowledge-record':
+      case 'knowledge-record': {
+        const editingRecord = view.editingId
+          ? (knowledge.find((k) => k.id === view.editingId) ?? null)
+          : null;
         return (
           <KnowledgeRecordView
             key="knowledge-record"
             mode={view.editingId ? 'edit' : 'new'}
             dateLabel={shortDate}
-            initialDraft={
-              view.editingId ? draftFromKnowledge(view.editingId) : view.prefill
+            draft={view.draft}
+            knowledgeAt={
+              editingRecord ? parseAppDateTime(editingRecord.createdAt) : null
             }
+            onChange={(draft) => replaceTop({ ...view, draft })}
+            onOpenPlcHistory={() => push({ kind: 'plc-history' })}
             onBack={backBtn}
             onSubmit={(draft) => {
               if (view.editingId) {
@@ -248,6 +269,7 @@ export function useAppModals(): AppModals {
             }}
           />
         );
+      }
 
       case 'knowledge-detail':
         return (
@@ -256,11 +278,53 @@ export function useAppModals(): AppModals {
             record={knowledge.find((k) => k.id === view.id) ?? null}
             onBack={backBtn}
             onEdit={() =>
-              push({ kind: 'knowledge-record', editingId: view.id })
+              push({
+                kind: 'knowledge-record',
+                editingId: view.id,
+                draft:
+                  draftFromKnowledge(view.id) ?? createEmptyKnowledgeDraft(),
+              })
             }
             onDelete={() => setDeleteTarget({ kind: 'knowledge', id: view.id })}
           />
         );
+
+      case 'plc-history': {
+        const below = stack[stack.length - 2];
+        const belowDraft =
+          below?.kind === 'knowledge-record' ? below.draft : null;
+        return (
+          <PlcHistoryView
+            key="plc-history"
+            now={new Date()}
+            initialSelectedId={belowDraft?.selectedPlcId ?? null}
+            onBack={back}
+            onConfirm={(candidate) => {
+              setStack((s) => {
+                const idx = s.length - 2;
+                const target = s[idx];
+                if (target?.kind !== 'knowledge-record') {
+                  return s.slice(0, -1);
+                }
+                const alreadyIncluded = target.draft.plcCandidates.some(
+                  (item) => item.id === candidate.id
+                );
+                const updatedTarget = {
+                  ...target,
+                  draft: {
+                    ...target.draft,
+                    plcCandidates: alreadyIncluded
+                      ? target.draft.plcCandidates
+                      : [...target.draft.plcCandidates, candidate],
+                    selectedPlcId: candidate.id,
+                  },
+                };
+                return [...s.slice(0, idx), updatedTarget];
+              });
+            }}
+          />
+        );
+      }
 
       default:
         return null;
